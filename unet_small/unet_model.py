@@ -8,16 +8,14 @@ from .unet_parts import *
 class UNet(nn.Module):
     def __init__(self, n_channels):
         super(UNet, self).__init__()
-        self.inc = inconv(n_channels, 64)
-        self.down1 = down(64, 128)
-        self.down2 = down(128, 256)
-        self.down3 = down(256, 512)
-        self.down4 = down(512, 512)
-        self.up1 = up(1024, 256)
-        self.up2 = up(512, 128)
-        self.up3 = up(256, 64)
-        self.up4 = up(128, 64)
-        self.outc = outconv(64, n_channels)
+        self.inc = inconv(n_channels, 10)
+        self.down1 = down(10, 20)
+        self.down2 = down(20, 30)
+        self.down3 = down(30, 40)
+        self.up1 = up(40, 30)
+        self.up2 = up(30, 20)
+        self.up3 = up(20, 10)
+        self.outc = outconv(10, n_channels)
 
     def forward(self, x):
         x1 = self.inc(x)
