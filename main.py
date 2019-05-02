@@ -12,7 +12,7 @@ import numpy as np
 import joblib
 import torchvision
 from torchvision import datasets, models, transforms
-from torch.utils.data import random_split
+from torch.utils.data import random_split, Sampler, WeightedRandomSampler
 import matplotlib.pyplot as plt
 import time
 import os
@@ -22,6 +22,10 @@ from tqdm import tqdm
 from unet_small import UNetSmall
 
 plt.ion()  # interactive mode
+
+
+def weighted_mse_loss(input, target, weight):
+    return torch.mean(weight.view(-1, 1, 1, 1) * (input - target) ** 2)
 
 
 def init(data_dir='./data', val_percent=0.1, batch_size=10):
@@ -39,7 +43,6 @@ def init(data_dir='./data', val_percent=0.1, batch_size=10):
             # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
     }
-
     train_dataset = datasets.FashionMNIST("./data",
                                           train=True,
                                           transform=data_transforms['train'],
@@ -47,10 +50,10 @@ def init(data_dir='./data', val_percent=0.1, batch_size=10):
                                           download=True)
 
     test_dataset = datasets.FashionMNIST("./data",
-                                          train=False,
-                                          transform=data_transforms['train'],
-                                          target_transform=None,
-                                          download=True)
+                                         train=False,
+                                         transform=data_transforms['train'],
+                                         target_transform=None,
+                                         download=True)
 
     N_val = len(test_dataset)
     N_train = len(train_dataset)
@@ -60,7 +63,6 @@ def init(data_dir='./data', val_percent=0.1, batch_size=10):
     dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batch_size,
                                                   shuffle=True, num_workers=4)
                    for x in ['train', 'val']}
-    dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -80,7 +82,7 @@ def imshow(inp, title=None):
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-def train_model(model, criterion, eval_metric, optimizer, scheduler, dataloaders, device, num_epochs=25):
+def train_model(model, criterion, eval_metric, optimizer, scheduler, dataloaders, device, num_epochs=25, discard_label=1):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -102,7 +104,6 @@ def train_model(model, criterion, eval_metric, optimizer, scheduler, dataloaders
                 model.eval()  # Set model to evaluate mode
 
             running_loss = 0.0
-            running_corrects = 0
 
             # Iterate over data.
             iterator = tqdm(dataloaders[phase], leave=False)
@@ -117,7 +118,8 @@ def train_model(model, criterion, eval_metric, optimizer, scheduler, dataloaders
                 # track history if only in train
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
-                    loss = criterion(outputs, inputs)
+                    weights = (1 - labels == torch.ones_like(labels)*discard_label).float()
+                    loss = criterion(outputs, inputs, weights)
 
                     # backward + optimize only if in training phase
                     if phase == 'train':
@@ -179,6 +181,7 @@ def visualize_model(model, num_images=6):
                     return
         model.train(mode=was_training)
 
+
 def main():
     dataloaders, device = init(batch_size=100)
     criterion = nn.MSELoss()
@@ -197,9 +200,9 @@ def main():
                           weight_decay=0.0005)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
-    best_model = train_model(model, criterion=criterion, eval_metric=eval_metric, optimizer=optimizer,
+    best_model = train_model(model, criterion=weighted_mse_loss, eval_metric=eval_metric, optimizer=optimizer,
                              scheduler=scheduler, dataloaders=dataloaders, device=device)
 
 
 if __name__ == "__main__":
-   main()
+    main()
