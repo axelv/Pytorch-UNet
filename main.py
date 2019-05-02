@@ -189,6 +189,7 @@ def main():
         return error.mean(list(range(1, len(error.shape))))
 
     model = UNetSmall(n_channels=1)
+    model = model.to(device)
     lr = 0.1
     optimizer = optim.SGD(model.parameters(),
                           lr=lr,
