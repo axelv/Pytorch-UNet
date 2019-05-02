@@ -129,8 +129,8 @@ def train_model(model, criterion, eval_metric, optimizer, scheduler, dataloaders
                 iterator.set_description("Loss: %.3f" % loss.item())
 
                 if phase == "val":
-                    sample_mse.append(eval_metric(outputs, inputs).numpy())
-                    sample_labels.append(labels.numpy())
+                    sample_mse.append(eval_metric(outputs, inputs).to("cpu").numpy())
+                    sample_labels.append(labels.to("cpu").numpy())
 
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
 
