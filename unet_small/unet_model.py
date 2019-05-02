@@ -12,9 +12,9 @@ class UNetSmall(nn.Module):
         self.down1 = down(10, 20)
         self.down2 = down(20, 30)
         self.down3 = down(30, 40)
-        self.up1 = up(40, 30)
-        self.up2 = up(30, 20)
-        self.up3 = up(20, 10)
+        self.up1 = up(70, 30)
+        self.up2 = up(50, 20)
+        self.up3 = up(30, 10)
         self.outc = outconv(10, n_channels)
 
     def forward(self, x):

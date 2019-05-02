@@ -9,6 +9,7 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 
 import numpy as np
+import joblib
 import torchvision
 from torchvision import datasets, models, transforms
 from torch.utils.data import random_split
@@ -79,11 +80,14 @@ def imshow(inp, title=None):
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-def train_model(model, criterion, optimizer, scheduler, dataset_sizes, device, num_epochs=25):
+def train_model(model, criterion, eval_metric, optimizer, scheduler, dataloaders, device, num_epochs=25):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_mse = 0.0
+
+    sample_mse = list()
+    sample_labels = list()
 
     for epoch in range(num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
@@ -113,8 +117,6 @@ def train_model(model, criterion, optimizer, scheduler, dataset_sizes, device, n
                 # track history if only in train
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
-                    # _, preds = torch.max(outputs, 1)
-                    preds = outputs
                     loss = criterion(outputs, inputs)
 
                     # backward + optimize only if in training phase
@@ -124,21 +126,22 @@ def train_model(model, criterion, optimizer, scheduler, dataset_sizes, device, n
 
                 # statistics
                 running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == inputs.data)
                 iterator.set_description("Loss: %.3f" % loss.item())
 
-            epoch_loss = running_loss / dataset_sizes[phase]
-            epoch_mse = running_corrects.double() / dataset_sizes[phase]
+                if phase == "val":
+                    sample_mse.append(eval_metric(outputs, inputs).numpy())
+                    sample_labels.append(labels.numpy())
 
-            print('{} Loss: {:.4f} Acc: {:.4f}'.format(
-                phase, epoch_loss, epoch_mse))
+            epoch_loss = running_loss / len(dataloaders[phase].dataset)
+
+            print('{} Loss: {:.4f}'.format(
+                phase, epoch_loss))
 
             # deep copy the model
-            if phase == 'val' and epoch_mse > best_mse:
-                best_mse = epoch_mse
+            if phase == 'val' and epoch_loss > best_mse:
+                best_mse = epoch_loss
                 best_model_wts = copy.deepcopy(model.state_dict())
-
-        print()
+                joblib.dump({'mse': sample_mse, 'labels': sample_labels}, "validation_results.joblib")
 
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(
@@ -176,10 +179,15 @@ def visualize_model(model, num_images=6):
                     return
         model.train(mode=was_training)
 
-
-if __name__ == "__main__":
+def main():
     dataloaders, device = init(batch_size=100)
     criterion = nn.MSELoss()
+
+    def eval_metric(input: torch.Tensor, target: torch.Tensor):
+        error = input - target
+        error = error * error
+        return error.mean(list(range(1, len(error.shape))))
+
     model = UNetSmall(n_channels=1)
     lr = 0.1
     optimizer = optim.SGD(model.parameters(),
@@ -188,9 +196,9 @@ if __name__ == "__main__":
                           weight_decay=0.0005)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
-    best_model = train_model(model,
-                             criterion=criterion,
-                             optimizer=optimizer,
-                             scheduler=scheduler,
-                             dataloaders=dataloaders,
-                             device=device)
+    best_model = train_model(model, criterion=criterion, eval_metric=eval_metric, optimizer=optimizer,
+                             scheduler=scheduler, dataloaders=dataloaders, device=device)
+
+
+if __name__ == "__main__":
+   main()
