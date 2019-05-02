@@ -12,7 +12,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch import optim
 from torchvision.transforms import transforms
 from eval import eval_net
-from unet_small import UNet
+from unet_small import UNetSmall
 # from utils import get_ids, split_ids, split_train_val, get_imgs_and_masks, batch
 
 def train_net(net,
@@ -146,7 +146,7 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
-    net = UNet(n_channels=1, n_classes=1)
+    net = UNetSmall(n_channels=1, n_classes=1)
 
     if args.load:
         net.load_state_dict(torch.load(args.load))

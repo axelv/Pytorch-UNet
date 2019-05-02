@@ -18,7 +18,7 @@ import os
 import copy
 from tqdm import tqdm
 
-from unet import UNet
+from unet_small import UNetSmall
 
 plt.ion()  # interactive mode
 
@@ -39,11 +39,21 @@ def init(data_dir='./data', val_percent=0.1, batch_size=10):
         ]),
     }
 
-    full_dataset = datasets.FashionMNIST("./data", train=True, transform=data_transforms['train'],
-                                         target_transform=None, download=True)
-    N_val = int(round(len(full_dataset) * val_percent))
-    N_train = len(full_dataset) - N_val
-    dataset_list = random_split(full_dataset, [N_train, N_val])
+    train_dataset = datasets.FashionMNIST("./data",
+                                          train=True,
+                                          transform=data_transforms['train'],
+                                          target_transform=None,
+                                          download=True)
+
+    test_dataset = datasets.FashionMNIST("./data",
+                                          train=False,
+                                          transform=data_transforms['train'],
+                                          target_transform=None,
+                                          download=True)
+
+    N_val = len(test_dataset)
+    N_train = len(train_dataset)
+    dataset_list = [train_dataset, test_dataset]
 
     image_datasets = {x: dataset for x, dataset in zip(['train', 'val'], dataset_list)}
     dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batch_size,
@@ -53,7 +63,7 @@ def init(data_dir='./data', val_percent=0.1, batch_size=10):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    return dataloaders, dataset_sizes, device
+    return dataloaders, device
 
 
 def imshow(inp, title=None):
@@ -69,7 +79,7 @@ def imshow(inp, title=None):
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-def train_model(model, criterion, optimizer, scheduler, dataset_sizes, dataloaders, device, num_epochs=25):
+def train_model(model, criterion, optimizer, scheduler, dataset_sizes, device, num_epochs=25):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -156,9 +166,9 @@ def visualize_model(model, num_images=6):
 
             for j in range(inputs.size()[0]):
                 images_so_far += 1
-                ax = plt.subplot(num_images//2, 2, images_so_far)
+                ax = plt.subplot(num_images // 2, 2, images_so_far)
                 ax.axis('off')
-                ax.set_title('predicted: {}'.format(class_names[preds[j]]))
+                ax.set_title('predicted: {}'.format(preds[j]))
                 imshow(inputs.cpu().data[j])
 
                 if images_so_far == num_images:
@@ -166,10 +176,11 @@ def visualize_model(model, num_images=6):
                     return
         model.train(mode=was_training)
 
+
 if __name__ == "__main__":
-    dataloaders, dataset_sizes, device = init(batch_size=100)
+    dataloaders, device = init(batch_size=100)
     criterion = nn.MSELoss()
-    model = UNet(n_channels=1)
+    model = UNetSmall(n_channels=1)
     lr = 0.1
     optimizer = optim.SGD(model.parameters(),
                           lr=lr,
@@ -177,5 +188,9 @@ if __name__ == "__main__":
                           weight_decay=0.0005)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
-    train_model(model, criterion=criterion, optimizer=optimizer, scheduler=scheduler, dataset_sizes=dataset_sizes,
-                dataloaders=dataloaders, device=device)
+    best_model = train_model(model,
+                             criterion=criterion,
+                             optimizer=optimizer,
+                             scheduler=scheduler,
+                             dataloaders=dataloaders,
+                             device=device)
