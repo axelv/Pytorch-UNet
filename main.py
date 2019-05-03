@@ -19,7 +19,7 @@ import os
 import copy
 from tqdm import tqdm
 
-from unet_small import UNetSmall
+from unet_noisy import UNetNoisy
 
 plt.ion()  # interactive mode
 
@@ -184,14 +184,13 @@ def visualize_model(model, num_images=6):
 
 def main():
     dataloaders, device = init(batch_size=100)
-    criterion = nn.MSELoss()
 
     def eval_metric(input: torch.Tensor, target: torch.Tensor):
         error = input - target
         error = error * error
         return error.mean(list(range(1, len(error.shape))))
 
-    model = UNetSmall(n_channels=1)
+    model = UNetNoisy(n_channels=1)
     model = model.to(device)
     lr = 0.1
     optimizer = optim.SGD(model.parameters(),

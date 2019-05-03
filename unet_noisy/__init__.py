@@ -1,1 +1,1 @@
-from .unet_model import UNetSmall
+from .unet_model import UNetNoisy

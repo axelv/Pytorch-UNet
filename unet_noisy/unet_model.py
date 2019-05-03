@@ -16,9 +16,9 @@ class AddNoise(nn.Module):
         return input + noise
 
 
-class UNetSmall(nn.Module):
+class UNetNoisy(nn.Module):
     def __init__(self, n_channels):
-        super(UNetSmall, self).__init__()
+        super(UNetNoisy, self).__init__()
         self.noise = AddNoise()
         self.inc = inconv(n_channels, 10)
         self.down1 = down(10, 20)
