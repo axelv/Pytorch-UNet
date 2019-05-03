@@ -3,9 +3,10 @@
 I started this experiment to see if it would be possible train autoencoders on images and subsequently use the MSE loss to discover new unseen types/classes of images.
 
 Since, I needed an autoencoder for images I started from a repository containing an implementation for U-Net.
-The code I added is all in main.py
+The code I added is all in `main.py`.
 
-README of the original U-Net repo
+<i>README of the original U-Net repo</i>
+
 -----------------
 # Pytorch-UNet
 ![input and output for a random image in the test dataset](https://framapic.org/OcE8HlU6me61/KNTt8GFQzxDR.png)
