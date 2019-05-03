@@ -2,12 +2,24 @@
 
 import torch.nn.functional as F
 
-from unet_noisy.unet_parts import *
+from unet.unet_parts import *
+
+
+class AddNoise(nn.Module):
+    def __init__(self, mean=0.0, stddev=0.1):
+        super(AddNoise, self).__init__()
+        self.mean = mean
+        self.stddev = stddev
+
+    def forward(self, input):
+        noise = input.clone().normal_(self.mean, self.stddev)
+        return input + noise
 
 
 class UNetSmall(nn.Module):
     def __init__(self, n_channels):
         super(UNetSmall, self).__init__()
+        self.noise = AddNoise()
         self.inc = inconv(n_channels, 10)
         self.down1 = down(10, 20)
         self.down2 = down(20, 30)
@@ -18,6 +30,7 @@ class UNetSmall(nn.Module):
         self.outc = outconv(10, n_channels)
 
     def forward(self, x):
+        x = self.noise(x)
         x1 = self.inc(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)

@@ -34,13 +34,13 @@ def init(data_dir='./data', val_percent=0.1, batch_size=10):
             # transforms.RandomResizedCrop(224),
             # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            transforms.Normalize([0.5], [0.25])
         ]),
         'val': transforms.Compose([
             # transforms.Resize(256),
             # transforms.CenterCrop(224),
             transforms.ToTensor(),
-            # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            transforms.Normalize([0.5], [0.25])
         ]),
     }
     train_dataset = datasets.FashionMNIST("./data",
