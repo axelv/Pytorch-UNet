@@ -94,6 +94,9 @@ def train_model(model, criterion, eval_metric, optimizer, scheduler, dataloaders
     sample_labels = list()
 
     for epoch in range(num_epochs):
+        sample_mse = list()
+        sample_labels = list()
+
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print('-' * 10)
 
