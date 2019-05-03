@@ -12,14 +12,18 @@ class AddNoise(nn.Module):
         self.stddev = stddev
 
     def forward(self, input):
-        noise = input.clone().normal_(self.mean, self.stddev)
-        return input + noise
+        if self.training:
+            noise = input.clone().normal_(self.mean, self.stddev)
+            return input + noise
+        else:
+            return input
 
 
 class UNetNoisy(nn.Module):
     def __init__(self, n_channels):
         super(UNetNoisy, self).__init__()
         self.noise = AddNoise()
+        self.low_noise = AddNoise(stddev=0.05)
         self.inc = inconv(n_channels, 10)
         self.down1 = down(10, 20)
         self.down2 = down(20, 30)
@@ -32,10 +36,14 @@ class UNetNoisy(nn.Module):
     def forward(self, x):
         x = self.noise(x)
         x1 = self.inc(x)
-        x2 = self.down1(x1)
-        x3 = self.down2(x2)
-        x4 = self.down3(x3)
-        x = self.up1(x4, x3)
+        x1_noisy = self.low_noise(x1)
+        x2 = self.down1(x1_noisy)
+        x2_noisy = self.low_noise(x2)
+        x3 = self.down2(x2_noisy)
+        x3_noisy = self.low_noise(x3)
+        x4 = self.down3(x3_noisy)
+        x4_noisy = self.low_noise(x4)
+        x = self.up1(x4_noisy, x3)
         x = self.up2(x, x2)
         x = self.up3(x, x1)
         x = self.outc(x)

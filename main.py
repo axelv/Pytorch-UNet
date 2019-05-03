@@ -69,14 +69,16 @@ def init(data_dir='./data', val_percent=0.1, batch_size=10):
     return dataloaders, device
 
 
-def imshow(inp, title=None):
+def imshow(inp, ax, title=None):
     """Imshow for Tensor."""
-    inp = inp.numpy().transpose((1, 2, 0))
-    mean = np.array([0.485, 0.456, 0.406])
-    std = np.array([0.229, 0.224, 0.225])
+    inp = inp.numpy()[1,:,:].squeeze()
+    mean = np.array([0.5])
+    std = np.array([0.25])
     inp = std * inp + mean
     inp = np.clip(inp, 0, 1)
-    plt.imshow(inp)
+    ax[0].imshow(inp, cmap="gray")
+    inp += np.random.normal(0, 0.1, size=inp.shape)
+    ax[1].imshow(inp, cmap="gray")
     if title is not None:
         plt.title(title)
     plt.pause(0.001)  # pause a bit so that plots are updated
@@ -189,6 +191,11 @@ def main():
         error = input - target
         error = error * error
         return error.mean(list(range(1, len(error.shape))))
+
+    # fig, ax = plt.subplots(1, 2)
+    # for i in range(10):
+    #     image, sample = next(iter(dataloaders['train']))
+    #     imshow(image, ax)
 
     model = UNetNoisy(n_channels=1)
     model = model.to(device)
