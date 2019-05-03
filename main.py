@@ -84,7 +84,7 @@ def imshow(inp, ax, title=None):
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-def train_model(model, criterion, eval_metric, optimizer, scheduler, dataloaders, device, num_epochs=25, discard_label=1):
+def train_model(model, criterion, eval_metric, optimizer, scheduler, dataloaders, device, num_epochs=25, discard_label=5):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -120,7 +120,7 @@ def train_model(model, criterion, eval_metric, optimizer, scheduler, dataloaders
                 # track history if only in train
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
-                    weights = (1 - labels == torch.ones_like(labels)*discard_label).float()
+                    weights = (1.0 - (labels == torch.ones_like(labels)*discard_label).float())
                     loss = criterion(outputs, inputs, weights)
 
                     # backward + optimize only if in training phase
