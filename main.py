@@ -145,7 +145,7 @@ def train_model(model, criterion, eval_metric, optimizer, scheduler, dataloaders
                 phase, epoch_loss))
 
             # deep copy the model
-            if phase == 'val' and epoch_loss > best_mse:
+            if phase == 'val' and epoch_loss < best_mse:
                 best_mse = epoch_loss
                 best_model_wts = copy.deepcopy(model.state_dict())
                 joblib.dump({'mse': sample_mse, 'labels': sample_labels}, "validation_results.joblib")
