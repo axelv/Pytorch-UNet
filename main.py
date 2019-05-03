@@ -25,7 +25,7 @@ plt.ion()  # interactive mode
 
 
 def weighted_mse_loss(input, target, weight):
-    return torch.mean(weight.view(-1, 1, 1, 1) * (input - target) ** 2)
+    return torch.mean(weight * ((input - target) ** 2).mean([1, 2, 3]))
 
 
 def init(data_dir='./data', val_percent=0.1, batch_size=10):
